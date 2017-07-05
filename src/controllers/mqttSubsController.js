@@ -12,11 +12,22 @@ function MqttSubsController(url, topic){
     client.on("message", (t, msg) => {
         console.log('topic said--->', msg.toString());
         try{
+            //Conecta ao cluster MongoDB
             mongodbClient.connect(mongoUri, (err, db) => {
-                
+                if (err) throw err;
+                //Faz uma query simples
+                db.collection('maquinas').find({modelo: msg.toString()}).toArray((error, results) => {
+                    if (error) throw error;
+                    //Trata o array de resultados
+                    results.map( (result, index) => {
+                        console.log('data:', result);
+                    });
+
+                    db.close();
+                });
             });
         }catch(error){
-
+            throw error;
         }
     });
 }
