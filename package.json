@@ -1,0 +1,33 @@
+{
+  "name": "mandabala_api",
+  "version": "1.0.0",
+  "description": "api-mandabala",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zscaiosi/mandabala-api.git"
+  },
+  "keywords": [
+    "mandabala",
+    "iot"
+  ],
+  "author": "Caio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zscaiosi/mandabala-api/issues"
+  },
+  "homepage": "https://github.com/zscaiosi/mandabala-api#readme",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3",
+    "mongodb": "^2.2.29",
+    "mqtt": "^2.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  }
+}
