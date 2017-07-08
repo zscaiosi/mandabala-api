@@ -31,7 +31,11 @@ function MqttSubsController(url, topic){
                     msg = JSON.parse(msg.toString());
                     console.log('->msg.tempo_ligada:', msg.tempo_ligada);
                     //Faz update do estado incrementando o tempo total que já passou ligada
-                    db.collection('maquinas').updateOne({"_id": msg._id}, {$set : {"ligada": msg.ligada}, $inc: {"tempo_ligada": msg.tempo_ligada}});
+                    db.collection('maquinas').updateOne({"_id": msg._id},{
+                        //Operators
+                        $inc: {"tempo_total_ligada": msg.tempo_ligada},
+                        $push: {"atividades": msg.atividades}
+                    });
                     db.close();
                 });
             });

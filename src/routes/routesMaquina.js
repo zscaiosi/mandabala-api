@@ -1,6 +1,7 @@
 let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
+let CalculoReceita = require('../models/CalculoReceita');
 
 const mongoUrl = "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin";
 
@@ -47,6 +48,25 @@ router.get('/encontrar', (req, res) => {
             });
         }else{
             res.status(400).json({response: 'Busca possível apenas por _id.'});
+        }
+    }catch(exception){
+        throw exception;
+    }
+});
+
+router.get('/receitaTotal', (req, res) => {
+    try{
+        let queryObj = req.query;
+
+        console.log('query', queryObj)
+
+        if( queryObj.hasOwnProperty("valor_hora") && queryObj.hasOwnProperty("tempo_total_ligada") ){
+            let calculate = new CalculoReceita();
+            const receita = calculate.receitaTotal(queryObj.valor_hora, queryObj.tempo_total_ligada);
+
+            res.status(200).json({response:"success", data: receita});
+        }else{
+            res.status(400).json({response:"error", data: "Passar valor/hora e tempo total ligada."});
         }
     }catch(exception){
         throw exception;
