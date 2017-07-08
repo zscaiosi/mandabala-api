@@ -13,7 +13,7 @@ router.post('/cadastrar', (req, res) => {
         if( body ){
             mongoClient.connect(mongoUrl, (dbErr, db) => {
                 //Faz insert apenas se existe um campo _id
-                body._id ? db.collection('maquinas').insert(body, null, (insertErr, result) => {
+                body._id ? db.collection('clientes').insert(body, null, (insertErr, result) => {
                     result.result.ok === 1 ? res.status(200).json({response: 'Adicionado com sucesso', data: result.ops[0]}) : res.status(500).send(insertErr);
                 }) : res.status(400).send('Não inseriu um _id!');
                 
@@ -24,6 +24,7 @@ router.post('/cadastrar', (req, res) => {
             res.status(400).json({response: 'Payload não encontrado'});
         }
     }catch(exception){
+        console.log(exception);
         throw exception;
     }
 });
@@ -37,7 +38,7 @@ router.get('/encontrar', (req, res) => {
         if( queryObj.hasOwnProperty("_id") ){
             mongoClient.connect(mongoUrl, (dbErr, db) => {
                
-                db.collection('maquinas').findOne(queryObj, (findErr, result) => {
+                db.collection('clientes').findOne(queryObj, (findErr, result) => {
                    
                     if (findErr) throw findErr;
 
