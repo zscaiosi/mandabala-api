@@ -10,7 +10,7 @@ router.post('/cadastrar', (req, res) => {
 
         console.log(body);
 
-        if( body ){
+        if( body.hasOwnProperty("_id") && body.hasOwnProperty("nome") ){
             mongoClient.connect(mongoUrl, (dbErr, db) => {
                 //Faz insert apenas se existe um campo _id
                 body._id ? db.collection('clientes').insert(body, null, (insertErr, result) => {
@@ -21,7 +21,7 @@ router.post('/cadastrar', (req, res) => {
                 
             });
         }else{
-            res.status(400).json({response: 'Payload não encontrado'});
+            res.status(400).json({response: 'Faltam informações sobre o cliente!'});
         }
     }catch(exception){
         console.log(exception);
