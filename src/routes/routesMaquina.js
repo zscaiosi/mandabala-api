@@ -63,6 +63,7 @@ router.get('/receitaTotal', (req, res) => {
         if( queryObj.hasOwnProperty("valor_hora") && queryObj.hasOwnProperty("tempo_total_ligada") ){
             let calculate = new CalculoReceita();
             const receita = calculate.receitaTotal(queryObj.valor_hora, queryObj.tempo_total_ligada);
+            console.log(calculate.receitaTotal(Number(queryObj.valor_hora), Number(queryObj.tempo_total_ligada)))
 
             res.status(200).json({response:"success", data: receita});
         }else{
