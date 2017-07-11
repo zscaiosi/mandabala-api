@@ -54,4 +54,46 @@ router.get('/encontrar', (req, res) => {
     }
 });
 
+router.get('/listar', (req, res) => {
+    try{
+            mongoClient.connect(mongoUrl, (dbErr, db) => {
+               
+                db.collection('clientes').find().toArray((findErr, results) => {
+                    if (findErr) throw findErr;
+
+                    res.status(200).json({response: 'ok', data: results});
+                });
+                db.close();
+            });
+        
+    }catch(exception){
+        throw exception;
+    }
+});
+
+router.put('/atualizar', (req, res) => {
+    try{
+        let putBody = req.body;
+
+        mongoClient.connect(mongoUrl, (dbErr, db) => {
+            
+            db.collection('clientes').findOneAndUpdate({_id: putBody._id},
+                                                        {$set: putBody}, null,
+                                                        (updateErr, result) => {
+                                                            console.log('r:', result);
+                                                            console.log('err:', updateErr);
+                                                            if(!updateErr && result.lastErrorObject.updatedExisting === true){
+                                                                res.status(200).json({response: "atualizado", data: {antigo: result.value, novo: putBody}});
+                                                            }else{
+                                                                res.status(400).json({response: "erro", data: updateErr});
+                                                            }
+                                                        });
+            db.close();
+        });
+        
+    }catch(exception){
+        throw exception;
+    }
+});
+
 module.exports = router;

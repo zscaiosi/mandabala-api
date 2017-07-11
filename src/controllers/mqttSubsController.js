@@ -13,32 +13,36 @@ function MqttSubsController(url, topic){
     client.on("message", (t, msg) => {
         console.log('topic said--->', msg.toString());
         try{
-            //Conecta ao cluster MongoDB
-            mongodbClient.connect(mongoUri, (err, db) => {
-                if (err) throw err;
-                //Faz uma query simples
-                db.collection('maquinas').find({_id: JSON.parse(msg.toString())._id}).toArray((error, results) => {
-                    if (error) throw error;
-                    //Trata o array de resultados
-                    results.map( (result, index) => {
-                        console.log('->result:', result);
-                    });
-                    db.close();
-                });
-                
+            if( msg.toString().hasOwnProperty("_id") ){
+                //Conecta ao cluster MongoDB
                 mongodbClient.connect(mongoUri, (err, db) => {
                     if (err) throw err;
-                    msg = JSON.parse(msg.toString());
-                    console.log('->msg.tempo_ligada:', msg.tempo_ligada);
-                    //Faz update do estado incrementando o tempo total que já passou ligada
-                    db.collection('maquinas').updateOne({"_id": msg._id},{
-                        //Operators
-                        $inc: {"tempo_total_ligada": msg.tempo_ligada},
-                        $push: {"atividades": msg.atividades}
+                    //Faz uma query simples
+                    db.collection('maquinas').find({_id: JSON.parse(msg.toString())._id}).toArray((error, results) => {
+                        if (error) throw error;
+                        //Trata o array de resultados
+                        results.map( (result, index) => {
+                            console.log('->result:', result);
+                        });
+                        db.close();
                     });
-                    db.close();
+                    
+                    mongodbClient.connect(mongoUri, (err, db) => {
+                        if (err) throw err;
+                        msg = JSON.parse(msg.toString());
+                        console.log('->msg.tempo_ligada:', msg.tempo_ligada);
+                        //Faz update do estado incrementando o tempo total que já passou ligada
+                        db.collection('maquinas').updateOne({"_id": msg._id},{
+                            //Operators
+                            $inc: {"tempo_total_ligada": msg.tempo_ligada},
+                            $push: {"atividades": msg.atividades}
+                        });
+                        db.close();
+                    });
                 });
-            });
+            }else{
+                console.log("não é JSON");
+            }
         }catch(error){
             throw error;
         }
