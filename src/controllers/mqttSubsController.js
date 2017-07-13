@@ -12,8 +12,10 @@ function MqttSubsController(url, topic){
 
     client.on("message", (t, msg) => {
         console.log('topic said--->', msg.toString());
+        console.log(JSON.parse(msg.toString()));
+        
         try{
-            if( msg.toString().hasOwnProperty("_id") ){
+            if( JSON.parse(msg).hasOwnProperty("_id") ){
                 //Conecta ao cluster MongoDB
                 mongodbClient.connect(mongoUri, (err, db) => {
                     if (err) throw err;
@@ -30,18 +32,22 @@ function MqttSubsController(url, topic){
                     mongodbClient.connect(mongoUri, (err, db) => {
                         if (err) throw err;
                         msg = JSON.parse(msg.toString());
-                        console.log('->msg.tempo_ligada:', msg.tempo_ligada);
                         //Faz update do estado incrementando o tempo total que já passou ligada
-                        db.collection('maquinas').updateOne({"_id": msg._id},{
+                        let promise = db.collection('maquinas').updateOne({"_id": msg._id},{
                             //Operators
-                            $inc: {"tempo_total_ligada": msg.tempo_ligada},
+                            $inc: {"tempo_total_ligada": msg.tempo_total_ligada},
                             $push: {"atividades": msg.atividades}
                         });
+                        //Se Promise foi 'resolvida'
+                        promise.then( (resolved) => {
+                            console.log('Documentos modificados: ', resolved.result.nModified, 'data-hora', new Date());
+                        })
+                        
                         db.close();
                     });
                 });
             }else{
-                console.log("não é JSON");
+                console.log("não é JSON", typeof msg._id);
             }
         }catch(error){
             throw error;
