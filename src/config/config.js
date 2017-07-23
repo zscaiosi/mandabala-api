@@ -3,6 +3,7 @@ let bodyParser = require('body-parser');
 let maquinas = require('../routes/routesMaquina');
 let clientes = require('../routes/routesCliente');
 let operadores = require('../routes/routesOperadores');
+const admins = require('../routes/routesAdmin');
 
 module.exports = function(){
     let app = express();
@@ -11,6 +12,7 @@ module.exports = function(){
     app.use('/maquinas', maquinas);
     app.use('/clientes', clientes);
     app.use('/operadores', operadores);
+    app.use('/admins', admins);
 
     return app;
 }
