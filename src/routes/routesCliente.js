@@ -10,7 +10,7 @@ router.post('/cadastrar', (req, res) => {
 
 		console.log(body);
 
-		if (body.hasOwnProperty("_id") && body.hasOwnProperty("nome")) {
+		if (body.hasOwnProperty("_id") && body.hasOwnProperty("razao_social") && body.hasOwnProperty("cnpj")) {
 			mongoClient.connect(mongoUrl, (dbErr, db) => {
 				//Faz insert apenas se existe um campo _id
 				body._id ? db.collection('clientes').insert(body, null, (insertErr, result) => {
@@ -35,10 +35,10 @@ router.get('/encontrar', (req, res) => {
 
 		console.log('query', queryObj)
 
-		if (queryObj.hasOwnProperty("_id")) {
+		if (queryObj.hasOwnProperty("cpf")) {
 			mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-				db.collection('clientes').findOne(queryObj, (findErr, result) => {
+				db.collection('clientes').findOne({ "_id": queryObj.cpf }, (findErr, result) => {
 
 					if (findErr) throw findErr;
 
@@ -77,16 +77,19 @@ router.put('/atualizar', (req, res) => {
 
 		mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-			db.collection('clientes').findOneAndUpdate({ _id: putBody._id },
+			db.collection('clientes').findOneAndUpdate({ _id: putBody.cnpj },
 				{ $set: putBody },
 				null,
-				(updateErr, result) => {
-					console.log('r:', result);
+				(updateErr, updateResult) => {
+					console.log('r:', updateResult);
 					console.log('err:', updateErr);
-					if (!updateErr && result.lastErrorObject.updatedExisting === true) {
-						res.status(200).json({ response: "atualizado", data: { antigo: result.value, novo: putBody } });
-					} else {
-						res.status(400).json({ response: "erro", data: updateErr });
+
+					if( updateErr ){
+						res.status(500).json({ response: 'erro', error: updateErr });
+					}else if( updateResult.ok === 1 && updateResult.lastErrorObject.updateExisting == true ) {
+						res.status(200).json({ response: "atualizado", data: { antigo: updateResult.value, novo: putBody } });
+					} else if( updateResult.value === null ) {
+						res.status(400).json({ response: "Não atualizado", data: updateResult });
 					}
 				});
 			db.close();
@@ -103,13 +106,15 @@ router.post('/login', (req, res) => {
     if( body.hasOwnProperty("login") && body.hasOwnProperty("senha") ){
       mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-        db.collection('clientes').findOne(body, (findErr, result) => {
+        db.collection('clientes').findOne(body, (findErr, findResult) => {
           if(findErr) {throw findErr; console.log(findErr)}
 
-          if( result === null ){
+          if( findErr !== null ){
+						res.status(500).json({response: 'error', error: findErr});
+					}else if( findResult === null ){
             res.status(500).json({response: 'não encontrado', authenticated: false});
           }else{
-            res.status(200).json({ response: 'ok', authenticated: true, data: result });
+            res.status(200).json({ response: 'ok', authenticated: true, data: findResult });
           }
           db.close();
         });

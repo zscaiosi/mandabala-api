@@ -31,17 +31,22 @@ router.post('/cadastrar', (req, res) => {
 
 router.post('/login', (req, res) => {
   const body = req.body;
+  
+  console.log(body)
   try{
-    if( body.hasOwnProperty("login") && body.hasOwnProperty("senha") ){
+    if( body.hasOwnProperty("email") && body.hasOwnProperty("password") ){
       mongoClient.connect(mongoUrl, (dbErr, db) => {
-
-        db.collection('admin').findOne(body, (findErr, result) => {
+        
+        db.collection('admins').findOne(body, (findErr, findResult) => {
           if(findErr) {throw findErr; console.log(findErr)}
+          console.log('eer', findErr, 'result', findResult)
 
-          if( result === null ){
+          if(findErr){
+            res.status(500).json({response: 'Usuário não encontrado!', error: findErr});
+          }else if( findResult === null ){
             res.status(500).json({response: 'não encontrado', authenticated: false});
           }else{
-            res.status(200).json({ response: 'ok', authenticated: true, data: result });
+            res.status(200).json({ response: 'ok', authenticated: true, data: findResult });
           }
           db.close();
         });
