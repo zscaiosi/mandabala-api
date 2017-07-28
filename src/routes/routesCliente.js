@@ -35,10 +35,10 @@ router.get('/encontrar', (req, res) => {
 
 		console.log('query', queryObj)
 
-		if (queryObj.hasOwnProperty("cpf")) {
+		if (queryObj.hasOwnProperty("id")) {
 			mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-				db.collection('clientes').findOne({ "_id": queryObj.cpf }, (findErr, result) => {
+				db.collection('clientes').findOne({ "_id": queryObj.id }, (findErr, result) => {
 
 					if (findErr) throw findErr;
 
@@ -58,12 +58,19 @@ router.get('/listar', (req, res) => {
 	try {
 		mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-			db.collection('clientes').find().toArray((findErr, results) => {
-				if (findErr) throw findErr;
+			db.collection('clientes').find().toArray((findErr, findResults) => {
+				
+				console.log(findResults);
 
-				res.status(200).json({ response: 'ok', data: results });
+				if( findErr ){
+					res.status(500).response({response: 'erro', error: findErr});
+					db.close();
+				}else if( findResults.length > 0 ){
+					res.status(200).json({ response: 'ok', data: findResults});
+					db.close();
+				}
 			});
-			db.close();
+			
 		});
 
 	} catch (exception) {
