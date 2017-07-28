@@ -102,6 +102,7 @@ router.get('/listar/minhas', (req, res) => {
 				});				
 			}else{
 				res.status(400).json({ repsonse: 'Falta _id do cliente!' });
+				db.close();
 			}
 
 		});

@@ -84,11 +84,11 @@ router.put('/atualizar', (req, res) => {
 					console.log('r:', updateResult);
 					console.log('err:', updateErr);
 
-					if( updateErr ){
+					if (updateErr) {
 						res.status(500).json({ response: 'erro', error: updateErr });
-					}else if( updateResult.ok === 1 && updateResult.lastErrorObject.updateExisting == true ) {
+					} else if (updateResult.ok === 1 && updateResult.lastErrorObject.updateExisting == true) {
 						res.status(200).json({ response: "atualizado", data: { antigo: updateResult.value, novo: putBody } });
-					} else if( updateResult.value === null ) {
+					} else if (updateResult.value === null) {
 						res.status(400).json({ response: "Não atualizado", data: updateResult });
 					}
 				});
@@ -101,30 +101,30 @@ router.put('/atualizar', (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-  const body = req.body;
-  try{
-    if( body.hasOwnProperty("login") && body.hasOwnProperty("senha") ){
-      mongoClient.connect(mongoUrl, (dbErr, db) => {
+	const body = req.body;
+	try {
+		if (body.hasOwnProperty("login") && body.hasOwnProperty("senha")) {
+			mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-        db.collection('clientes').findOne(body, (findErr, findResult) => {
-          if(findErr) {throw findErr; console.log(findErr)}
+				db.collection('clientes').findOne(body, (findErr, findResult) => {
+					if (findErr) { throw findErr; console.log(findErr) }
 
-          if( findErr !== null ){
-						res.status(500).json({response: 'error', error: findErr});
-					}else if( findResult === null ){
-            res.status(500).json({response: 'não encontrado', authenticated: false});
-          }else{
-            res.status(200).json({ response: 'ok', authenticated: true, data: findResult });
-          }
-          db.close();
-        });
+					if (findErr !== null) {
+						res.status(500).json({ response: 'error', error: findErr });
+					} else if (findResult === null) {
+						res.status(500).json({ response: 'não encontrado', authenticated: false });
+					} else {
+						res.status(200).json({ response: 'ok', authenticated: true, data: findResult });
+					}
+					db.close();
+				});
 
-      });
-    }
+			});
+		}
 
-  }catch(exception){
-    if(exception) {throw exception; console.log(exception);}
-  }
+	} catch (exception) {
+		if (exception) { throw exception; console.log(exception); }
+	}
 });
 
 module.exports = router;
