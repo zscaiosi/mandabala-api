@@ -11,15 +11,18 @@ router.post('/cadastrar', (req, res) => {
 		console.log(body);
 
 		if (body.hasOwnProperty("_id") && body.hasOwnProperty("razao_social") && body.hasOwnProperty("cnpj")) {
+
 			mongoClient.connect(mongoUrl, (dbErr, db) => {
 				//Faz insert apenas se existe um campo _id
 				body._id ? db.collection('clientes').insert(body, null, (insertErr, result) => {
 					result.result.ok === 1 ? res.status(200).json({ response: 'Adicionado com sucesso', data: result.ops[0] }) : res.status(500).send(insertErr);
+
+					db.close();
+									
 				}) : res.status(400).send('Não inseriu um _id!');
 
-				db.close();
-
 			});
+
 		} else {
 			res.status(400).json({ response: 'Faltam informações sobre o cliente!' });
 		}
