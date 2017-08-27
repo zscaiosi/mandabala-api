@@ -23,6 +23,7 @@
   "homepage": "https://github.com/zscaiosi/mandabala-api#readme",
   "dependencies": {
     "body-parser": "^1.17.2",
+    "cors": "^2.8.4",
     "express": "^4.15.3",
     "mongodb": "^2.2.30",
     "mqtt": "^2.9.0"

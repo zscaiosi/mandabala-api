@@ -1,0 +1,4 @@
+{
+  "mqttAws" : "ec2-54-210-226-41.compute-1.amazonaws.com",
+  "mongoDb" : "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin"
+}
