@@ -2,8 +2,7 @@ let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
 let CalculoReceita = require('../models/CalculoReceita');
-
-const mongoUrl = "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin";
+const mongoUri = require("../config/hosts.json").mongoDb;
 
 router.post('/cadastrar', (req, res) => {
 	try {
@@ -12,7 +11,7 @@ router.post('/cadastrar', (req, res) => {
 		console.log(body);
 
 		if (body) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
+			mongoClient.connect(mongoUri, (dbErr, db) => {
 				//Faz insert apenas se existe um campo _id
 				if(body._id){
 					db.collection('maquinas').insert(body, null, (insertErr, result) => {
@@ -35,7 +34,7 @@ router.post('/cadastrar', (req, res) => {
 									res.status(200).json({ insert: { response: 'Adicionado com sucesso', data: result.ops[0] }, update: {response: 'ok', data: updateResult}});
 									db.close();
 								}else{
-									res.status(500).json({ response: 'não atualizou', data: updateResult })
+									res.status(500).json({ response: 'não atualizou', data: updateResult });
 								}
 
 							}
@@ -60,7 +59,7 @@ router.post('/cadastrar', (req, res) => {
 
 router.get('/listar', (req, res) => {
 	try {
-		mongoClient.connect(mongoUrl, (dbErr, db) => {
+		mongoClient.connect(mongoUri, (dbErr, db) => {
 
 			db.collection('maquinas').find().toArray((findErr, results) => {
 				if (findErr) throw findErr;
@@ -83,7 +82,7 @@ router.get('/listar', (req, res) => {
 
 router.get('/listar/minhas', (req, res) => {
 	try {
-		mongoClient.connect(mongoUrl, (dbErr, db) => {
+		mongoClient.connect(mongoUri, (dbErr, db) => {
 			const queryObj = req.query;
 
 			console.log(queryObj);
@@ -119,7 +118,7 @@ router.get('/encontrar', (req, res) => {
 		console.log('query', queryObj)
 
 		if (queryObj.hasOwnProperty("_id") && queryObj.hasOwnProperty("cliente")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
+			mongoClient.connect(mongoUri, (dbErr, db) => {
 
 				db.collection('maquinas').findOne(queryObj, (findErr, result) => {
 

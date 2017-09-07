@@ -1,7 +1,7 @@
 const mqtt = require('mqtt');
 const mongodbClient = require('mongodb').MongoClient;
 const mongoUri = require("../config/hosts.json").mongoDb;
-
+const fs = require('fs');
 
 function MqttSubsController(url, topic) {
 	let client = mqtt.connect("mqtt://" + url);
@@ -12,54 +12,41 @@ function MqttSubsController(url, topic) {
 
 	client.on("message", (t, msg) => {
 		console.log('topic said--->', msg.toString(), typeof t);
-		//console.log(JSON.parse(msg.toString()));
+		
+		if( msg.toString().indexOf("Olá") !== -1 ){
+			return
+		}
 
-		if( t.indexOf("maquina/bichinho/atividade/report/m") !== -1 ){
+		let jsonMsg = JSON.parse(msg.toString());
+		//Precisa ter vindo do tópico "maquina/bichinho/atividade/report" de atividades e ter chave _id na mensagem
+		if( t.indexOf("maquina/bichinho/atividade/") !== -1 && jsonMsg.hasOwnProperty("_id") ){
 			try {
-				if (JSON.parse(msg).hasOwnProperty("_id")) {
-					//Conecta ao cluster MongoDB
-					mongodbClient.connect(mongoUri, (err, db) => {
-						if (err) throw err;
-						//Faz uma query simples
-						db.collection('maquinas').find({ _id: JSON.parse(msg.toString())._id }).toArray((error, results) => {
-							if (error) throw error;
-							//Trata o array de resultados
-							results.map((result, index) => {
-								console.log('->result:', result);
-							});
-							db.close();
-						});
-
-						mongodbClient.connect(mongoUri, (err, db) => {
-							if (err) throw err;
-							msg = JSON.parse(msg.toString());
-							//Faz update do estado incrementando o tempo total que já passou ligada
-							let promise = db.collection('maquinas').updateOne({ "_id": msg._id }, {
-								//Operators
-								$inc: { "tempo_total_ligada": msg.tempo_total_ligada },
-								$push: { "atividades": msg.atividades }
+				console.log("Recebeu...", jsonMsg);
+				mongodbClient.connect( mongoUri, (dbErr, db) => {
+					//Callback do connect
+					if( dbErr ){
+						return
+					}else{
+						db.collection('maquinas').findOneAndUpdate({ _id: jsonMsg._id },
+							{
+								$inc: { tempo_total_ligada: Number(jsonMsg.tempo_ligada) }
 							},
-							null,
-							(updateErr, updateResult) => {
-								if( updateErr ){
-									console.log(updateErr);
-								}else if( updateResult.ok === 1 ){
-									console.log('Documentos modificados: ', updateResult.result.nModified, 'data-hora', new Date());
+							(findErr, result) => {
+								//Callback do update
+								if( findErr ){
+									db.close();
+									console.log("findErr", findErr);
+									return;
 								}else{
-									console.log('Documentos NÃO modificados: ', updateResult, 'data-hora', new Date());
+									console.log("Result: ", result);
+									db.close();
 								}
-							});
-							//Se Promise foi 'resolvida'
-							promise.then((resolved) => {
-								console.log('Documentos modificados: ', resolved.result.nModified, 'data-hora', new Date());
-							})
 
-							db.close();
 						});
-					});
-				} else {
-					console.log("não é JSON", typeof msg._id);
-				}
+					}
+
+				});
+
 			} catch (error) {
 				throw error;
 			}			
