@@ -1,6 +1,8 @@
 let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
+const User = require('../models/User');
+const passport = require("passport");
 
 const mongoUrl = "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin";
 
@@ -106,32 +108,9 @@ router.put('/atualizar', (req, res) => {
 		throw exception;
 	}
 });
-
-router.post('/login', (req, res) => {
-	const body = req.body;
-	try {
-		if (body.hasOwnProperty("login") && body.hasOwnProperty("senha")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
-
-				db.collection('clientes').findOne(body, (findErr, findResult) => {
-					if (findErr) { throw findErr; console.log(findErr) }
-
-					if (findErr !== null) {
-						res.status(500).json({ response: 'error', error: findErr });
-					} else if (findResult === null) {
-						res.status(500).json({ response: 'não encontrado', authenticated: false });
-					} else {
-						res.status(200).json({ response: 'ok', authenticated: true, data: findResult });
-					}
-					db.close();
-				});
-
-			});
-		}
-
-	} catch (exception) {
-		if (exception) { throw exception; console.log(exception); }
-	}
-});
+//Login com passport
+router.post('/login', passport.authenticate('local', {session: false}), function(req, res){
+	res.json({auth: true, user: req.user});
+})
 
 module.exports = router;
