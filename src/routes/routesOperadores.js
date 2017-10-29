@@ -1,6 +1,7 @@
 let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
+const Operador = require("../models/Operador");
 
 const mongoUrl = "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin";
 
@@ -10,40 +11,22 @@ router.post('/cadastrar', (req, res) => {
 
 		console.log(body);
 
-		if (body.hasOwnProperty("_id") && body.hasOwnProperty("nome") && body.hasOwnProperty("cliente")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
-				//Faz insert apenas se existe os campos _id nome e cliente
-				body._id ? db.collection('operadores').insert(body, null, (insertErr, result) => {
-					if( insertErr ){
-						res.status(500).send(insertErr);
-						db.close();
-					}else if( result.result.ok === 1 ){
+		if (body.hasOwnProperty("_id") && body.hasOwnProperty("nome_quiosque") && body.hasOwnProperty("cliente")) {
 
-						db.collection('clientes').findOneAndUpdate({ _id: body.cliente },
-							{
-								$push: { operadores: body }
-							},
-							null,
-							(updateErr, updateResult) => {
+			const operator = new Operador();
 
-								if( updateErr ){
-									res.status(500).json({ response: 'erro', error: updateErr });
-									console.log('...', updateErr)
-									db.close();
-								}else if( updateResult && updateResult.ok === 1 ){
-									res.status(200).json({ insert: { response: 'Adicionado com sucesso', data: result.ops[0] }, update: { response: 'ok', data: updateResult } });
-									db.close();
-								}else{
-									res.status(500).json({ response: 'não atualizado', data: updateResult });
-									db.close();
-								}
-							}
-							);//Fim do update
-					}
-					  
-				}) : res.status(400).send('Não inseriu _id!');
+			operator.insert(body, function(status, result){
+				
+				if( status === 200 ){
+					res.status(status).json({ ok: true, result });
+				}else if( status === 500 ){
+					res.status(status).json({ ok: false, error: result });
+				}else{
+					res.status(status).json({ ok: false, result });
+				}
 
 			});
+
 		} else {
 			res.status(400).json({ response: 'Faltam informações sobre o operador!' });
 		}
@@ -59,24 +42,24 @@ router.get('/encontrar', (req, res) => {
 
 		console.log('query', queryObj)
 
-		if (queryObj.hasOwnProperty("cliente")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
+		if (queryObj.hasOwnProperty("clienteId")) {
 
-				db.collection('operadores').findOne(queryObj, (findErr, result) => {
+			const operator = new Operador();
 
-					if (findErr) throw findErr;
+			operator.findByCliente(queryObj.clienteId, function(status, results){
 
-					if (result === null) {
-						res.status(500).json({ response: 'não encontrado', data: result });
-					} else {
-						res.status(200).json({result: result, response: 'ok'});
-					}
-					db.close();
-				});
+				if( status === 200 ){
+					res.status(status).json({ ok: true, results });
+				}else if( status === 500 ){
+					res.status(status).json({ ok: false, error: result });
+				}else{
+					res.status(status).json({ ok: false, results });
+				}
 
 			});
+
 		} else {
-			res.status(400).json({ response: 'Busca possível apenas por _id.' });
+			res.status(400).json({ response: 'Busca possível apenas por cliente.' });
 		}
 	} catch (exception) {
 		throw exception;
@@ -85,12 +68,14 @@ router.get('/encontrar', (req, res) => {
 
 router.get('/listar', (req, res) => {
 	try {
+		const queryObj = req.query;
+
 		mongoClient.connect(mongoUrl, (dbErr, db) => {
 
-			db.collection('operadores').find().toArray((findErr, results) => {
+			db.collection('operadores').find({cliente: queryObj.clienteId}).toArray((findErr, results) => {
 				if (findErr) throw findErr;
 
-				res.status(200).json({ response: 'ok', data: results });
+				res.status(200).json({ response: 'ok', results: results });
 			});
 			db.close();
 		});
@@ -104,20 +89,18 @@ router.put('/atualizar', (req, res) => {
 	try {
 		let putBody = req.body;
 
-		mongoClient.connect(mongoUrl, (dbErr, db) => {
+		const operator = new Operador();
 
-			db.collection('operadores').findOneAndUpdate({ _id: putBody._id },
-				{ $set: putBody }, null,
-				(updateErr, result) => {
-					console.log('r:', result);
-					console.log('err:', updateErr);
-					if (!updateErr && result.lastErrorObject.updatedExisting === true) {
-						res.status(200).json({ response: "atualizado", data: { antigo: result.value, novo: putBody } });
-					} else {
-						res.status(400).json({ response: "erro", data: updateErr });
-					}
-				});
-			db.close();
+		operator.update(putBody._id, putBody, function(status, result){
+
+			if( status === 200 ){
+				res.status(status).json({ ok: true, result });
+			}else if( status === 500 ){
+				res.status(status).json({ ok: false, error: result });
+			}else{
+				res.status(status).json({ ok: false, result });
+			}
+
 		});
 
 	} catch (exception) {

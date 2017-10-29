@@ -3,54 +3,32 @@ let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
 let CalculoReceita = require('../models/CalculoReceita');
 const mongoUri = require("../config/hosts.json").mongoDb;
+const Maquina = require("../models/Maquina");
 
 router.post('/cadastrar', (req, res) => {
 	try {
 		let body = req.body;
 
-		console.log(body);
+		console.log("Cadastrar Maquina:", body);
 
-		if (body) {
-			mongoClient.connect(mongoUri, (dbErr, db) => {
-				//Faz insert apenas se existe um campo _id
-				if(body._id){
-					db.collection('maquinas').insert(body, null, (insertErr, result) => {
+		if (body._id && body.cliente) {
 
-					if( insertErr ){
-						res.status(500).json({insertErr: insertErr, response: result.result.ok});
-						db.close();
-					}else if(result.result.ok === 1){
+			const machine = new Maquina();
 
-						body.cliente ? db.collection('clientes').findOneAndUpdate({ _id : body.cliente },
-							{
-								$push : { maquinas : body}
-							},
-							null,
-							(updateErr, updateResult) => {
-								if( updateErr ){
-									res.status(500).json({ updateErr: updateErr, response: updateResult });
-									db.close();
-								}else if( updateResult.ok === 1 ){
-									res.status(200).json({ insert: { response: 'Adicionado com sucesso', data: result.ops[0] }, update: {response: 'ok', data: updateResult}});
-									db.close();
-								}else{
-									res.status(500).json({ response: 'não atualizou', data: updateResult });
-								}
+			machine.insert(body, function(status, result){
 
-							}
-						) : console.log('Fez insert, porém não há campo cliente.');//Fim update
-
-					}
-					});//Fim do inser
-
+				if( status === 200 ){
+					res.status(status).json({ ok: true, result });
+				}else if( status === 500 ){
+					res.status(status).json({ ok: false, error: result });
 				}else{
-					res.status(400).send('Não inseriu um _id!');
-					db.close();
-				}
+					res.status(status).json({ ok: false, result });
+				}					
 
 			});
+
 		} else {
-			res.status(400).json({ response: 'Payload não encontrado' });
+			res.status(400).json({ response: '_id e cliente' });
 		}
 	} catch (exception) {
 		throw exception;
@@ -59,21 +37,22 @@ router.post('/cadastrar', (req, res) => {
 
 router.get('/listar', (req, res) => {
 	try {
-		mongoClient.connect(mongoUri, (dbErr, db) => {
+		const queryObj = req.query;
 
-			db.collection('maquinas').find().toArray((findErr, results) => {
-				if (findErr) throw findErr;
+		const machine = new Maquina();
+		
+		machine.list(null, function(status, results){
 
-				if (results === null) {
-					res.status(500).json({ response: 'nenhum', data: results });
-					db.close();
-				} else {
-					res.status(200).json({ response: 'ok', data: results });
-					db.close();
-				}
-			});
+			if( status === 200 ){
+				res.status(status).json({ ok: true, results });
+			}else if( status === 500 ){
+				res.status(status).json({ ok: false, error: results });
+			}else{
+				res.status(status).json({ ok: false, results });
+			}					
 
-		});
+		});	
+
 
 	} catch (exception) {
 		throw exception;
@@ -82,29 +61,23 @@ router.get('/listar', (req, res) => {
 
 router.get('/listar/minhas', (req, res) => {
 	try {
-		mongoClient.connect(mongoUri, (dbErr, db) => {
-			const queryObj = req.query;
+		const queryObj = req.query;
 
-			console.log(queryObj);
+		if( queryObj.cliente ){
+			const machine = new Maquina();
+			
+			machine.list(queryObj.cliente, function(status, results){
 
-			if( queryObj.cliente ){
-				db.collection('maquinas').find({ cliente: queryObj.cliente }).toArray((findErr, results) => {
-					if (findErr){					
-						res.status(500).json({ response: 'erro', error: findErr });
-					}else if(results === null) {
-						res.status(500).json({ response: 'nenhum', data: results });
-						db.close();
-					} else {
-						res.status(200).json({ response: 'ok', data: results });
-						db.close();
-					}
-				});				
-			}else{
-				res.status(400).json({ repsonse: 'Falta _id do cliente!' });
-				db.close();
-			}
+				if( status === 200 ){
+					res.status(status).json({ ok: true, results });
+				}else if( status === 500 ){
+					res.status(status).json({ ok: false, error: results });
+				}else{
+					res.status(status).json({ ok: false, results });
+				}					
 
-		});
+			});	
+		}
 
 	} catch (exception) {
 		throw exception;

@@ -2,9 +2,9 @@ let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
 const User = require('../models/User');
-const passport = require("passport");
+const url = require('../config/hosts.json');
 
-const mongoUrl = "mongodb://mongocaio:m0ng0ldb*@clusteruno-shard-00-01-7t23t.mongodb.net:27017/maquinas?ssl=true&replicaSet=ClusterUno-shard-0&authSource=admin";
+const mongoUrl = url.mongoDb;
 
 router.post('/cadastrar', (req, res) => {
 	try {
@@ -13,15 +13,20 @@ router.post('/cadastrar', (req, res) => {
 		console.log(body);
 
 		if (body.hasOwnProperty("_id") && body.hasOwnProperty("razao_social") && body.hasOwnProperty("cnpj")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
-				//Faz insert apenas se existe um campo _id
-				body._id ? db.collection('clientes').insert(body, null, (insertErr, result) => {
-					result.result.ok === 1 ? res.status(200).json({ response: 'Adicionado com sucesso', data: result.ops[0] }) : res.status(500).send(insertErr);
-				}) : res.status(400).send('Não inseriu um _id!');
+			const user = new User(2);
 
-				db.close();
+			user.insert(body, function(status, result){
 
+				if( status === 200 ){
+					res.status(status).json({ ok: true, result });
+				}else if( status === 500 ){
+					res.status(status).json({ ok: false, error: result });
+				}else{
+					res.status(status).json({ ok: false, result });
+				}
+	
 			});
+
 		} else {
 			res.status(400).json({ response: 'Faltam informações sobre o cliente!' });
 		}
@@ -35,22 +40,20 @@ router.get('/encontrar', (req, res) => {
 	try {
 		let queryObj = req.query;
 
-		console.log('query', queryObj)
+		const user = new User(2);
 
-		if (queryObj.hasOwnProperty("id")) {
-			mongoClient.connect(mongoUrl, (dbErr, db) => {
+		user.findById(queryObj._id, function(status, result){
 
-				db.collection('clientes').findOne({ "_id": queryObj.id }, (findErr, result) => {
+			if( status === 200 ){
+				res.status(status).json({ ok: true, result });
+			}else if( status === 500 ){
+				res.status(status).json({ ok: false, error: result });
+			}else{
+				res.status(status).json({ ok: false, result });
+			}
 
-					if (findErr) throw findErr;
+		});
 
-					res.status(200).json(result);
-				});
-				db.close();
-			});
-		} else {
-			res.status(400).json({ response: 'Busca possível apenas por _id.' });
-		}
 	} catch (exception) {
 		throw exception;
 	}
@@ -68,7 +71,10 @@ router.get('/listar', (req, res) => {
 					res.status(500).response({response: 'erro', error: findErr});
 					db.close();
 				}else if( findResults.length > 0 ){
-					res.status(200).json({ response: 'ok', data: findResults});
+					res.status(200).json({ response: 'ok', results: findResults});
+					db.close();
+				}else{
+					res.status(200).json({ ok: false, results: null });
 					db.close();
 				}
 			});
@@ -81,36 +87,57 @@ router.get('/listar', (req, res) => {
 });
 
 router.put('/atualizar', (req, res) => {
-	try {
-		let putBody = req.body;
+  try {
+    let putBody = req.body;
 
-		mongoClient.connect(mongoUrl, (dbErr, db) => {
+    if( putBody.hasOwnProperty("_id") ){
 
-			db.collection('clientes').findOneAndUpdate({ _id: putBody.cnpj },
-				{ $set: putBody },
-				null,
-				(updateErr, updateResult) => {
-					console.log('r:', updateResult);
-					console.log('err:', updateErr);
+      const user = new User(2);
+      
+      user.update(putBody._id, putBody, function(status, result){
+  
+        if( status === 200 ){
+          res.status(status).json({ ok: true, result });
+        }else if( status === 500 ){
+          res.status(status).json({ ok: false, error: result });
+        }else{
+          res.status(status).json({ ok: false, result });
+        }
+  
+      });  
 
-					if (updateErr) {
-						res.status(500).json({ response: 'erro', error: updateErr });
-					} else if (updateResult.ok === 1 && updateResult.lastErrorObject.updateExisting == true) {
-						res.status(200).json({ response: "atualizado", data: { antigo: updateResult.value, novo: putBody } });
-					} else if (updateResult.value === null) {
-						res.status(400).json({ response: "Não atualizado", data: updateResult });
-					}
-				});
-			db.close();
-		});
+    }else{
+      res.status(400).json({ ok: false, error: "{_id}" });
+    }
 
-	} catch (exception) {
-		throw exception;
-	}
+  } catch (exception) {
+    throw exception;
+  }
 });
 //Login com passport
-router.post('/login', passport.authenticate('local', {session: false}), function(req, res){
-	res.json({auth: true, user: req.user});
-})
+router.post('/login', (req, res) => {
+	const body = req.body;
+
+	if( body.hasOwnProperty("email") && body.hasOwnProperty("password") ){
+
+		const user = new User(2);
+		
+		user.auth(body.email, body.password, function(status, result){
+
+			if( status === 200 ){
+				res.status(status).json({ ok: true, result });
+			}else if( status === 500 ){
+				res.status(status).json({ ok: false, error: result });
+			}else{
+				res.status(status).json({ ok: false, result });
+			}
+
+		});
+		
+	}else{
+		res.status(400).json({ ok: false, error: "{email, password}" });
+	}
+
+});
 
 module.exports = router;

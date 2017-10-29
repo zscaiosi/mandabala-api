@@ -1,7 +1,8 @@
 const mqtt = require('mqtt');
 const mongodbClient = require('mongodb').MongoClient;
 const mongoUri = require("../config/hosts.json").mongoDb;
-const fs = require('fs');
+//const fs = require('fs');
+const moment = require('moment');
 
 function MqttSubsController(url, topic) {
 	let client = mqtt.connect("mqtt://" + url);
@@ -11,26 +12,24 @@ function MqttSubsController(url, topic) {
 	});
 
 	client.on("message", (t, msg) => {
-		console.log('topic said--->', msg.toString(), typeof t);
+		console.log( `TOPIC: ${t}, SAID: `, msg.toString() );
 		
-		if( msg.toString().indexOf("Olá") !== -1 ){
-			return
-		}
-
-		let jsonMsg = JSON.parse(msg.toString());
+		//Certifica-se que existe uma mensage
+		let jsonMsg = msg.byteLength > 0 ? JSON.parse(msg.toString()) : null;
 		//Precisa ter vindo do tópico "maquina/bichinho/atividade/report" de atividades e ter chave _id na mensagem
-		if( t.indexOf("maquina/bichinho/atividade/") !== -1 && jsonMsg.hasOwnProperty("_id") ){
+		if( t.indexOf("maquina/bichinho/atividade/") !== -1 && jsonMsg && jsonMsg.hasOwnProperty("_id") ){
 			try {
-				console.log("Recebeu...", jsonMsg);
 				mongodbClient.connect( mongoUri, (dbErr, db) => {
 					//Callback do connect
 					if( dbErr ){
 						return
 					}else{
-						db.collection('maquinas').findOneAndUpdate({ _id: jsonMsg._id },
+						db.collection('maquinas').findOneAndUpdate({ _id: String(jsonMsg._id) },
 							{
-								$inc: { tempo_total_ligada: Number(jsonMsg.tempo_ligada) }
+								$inc: { tempo_total_ligada: Number(jsonMsg.tempo_ligada) },
+								$set: { ultima_acao:  moment.utc().format() }
 							},
+							null,
 							(findErr, result) => {
 								//Callback do update
 								if( findErr ){
@@ -38,11 +37,11 @@ function MqttSubsController(url, topic) {
 									console.log("findErr", findErr);
 									return;
 								}else{
-									console.log("Result: ", result);
-									db.close();
+									console.log("Maquinas findOneAndUpdate Result: ", result);
 								}
-
+								db.close();
 						});
+						// db.collection('maquinas').update
 					}
 
 				});
@@ -50,7 +49,7 @@ function MqttSubsController(url, topic) {
 			} catch (error) {
 				throw error;
 			}			
-		}else if( t.indexOf("teste/maquinas/atividades") !== -1 ){
+		}else if( t.indexOf("teste/maquinas/teste") !== -1 ){
 			console.log('TESTANDO MQTT: ', msg.toString());
 		}else{
 			console.log('Tópico desconhecido: ', t, msg.toString());
