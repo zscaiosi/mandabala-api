@@ -1,7 +1,6 @@
 let express = require('express');
 let router = express.Router();
 let mongoClient = require('mongodb').MongoClient;
-let CalculoReceita = require('../models/CalculoReceita');
 const mongoUri = require("../config/hosts.json").mongoDb;
 const Maquina = require("../models/Maquina");
 
@@ -23,7 +22,7 @@ router.post('/cadastrar', (req, res) => {
 					res.status(status).json({ ok: false, error: result });
 				}else{
 					res.status(status).json({ ok: false, result });
-				}					
+				}
 
 			});
 
@@ -90,19 +89,13 @@ router.get('/encontrar', (req, res) => {
 
 		console.log('query', queryObj)
 
-		if (queryObj.hasOwnProperty("_id") && queryObj.hasOwnProperty("cliente")) {
-			mongoClient.connect(mongoUri, (dbErr, db) => {
+		if ( queryObj.hasOwnProperty("_id") ) {
+			const maquina = new Maquina();
 
-				db.collection('maquinas').findOne(queryObj, (findErr, result) => {
-
-					if (findErr) throw findErr;
-
-					res.status(200).json({ data: result, response: 'ok' });
-					
-					db.close();
-				});
-				
+			maquina.findById(queryObj._id, (status, json) => {
+				res.status(status).json(json);
 			});
+
 		} else {
 			res.status(400).json({ response: 'Busca possível apenas por _id.' });
 		}
@@ -111,24 +104,20 @@ router.get('/encontrar', (req, res) => {
 	}
 });
 
-router.get('/receitaTotal', (req, res) => {
-	try {
-		let queryObj = req.query;
+router.delete('/remover/:_id', (req, res) => {
+	const body = req.params;
+	console.log("REMOVE", body);
 
-		console.log('query', queryObj)
+	if( body.hasOwnProperty("_id") ){
+		const maquina = new Maquina();
 
-		if (queryObj.hasOwnProperty("valor_hora") && queryObj.hasOwnProperty("tempo_total_ligada")) {
-			let calculate = new CalculoReceita();
-			const receita = calculate.receitaTotal(queryObj.valor_hora, queryObj.tempo_total_ligada);
-			console.log(calculate.receitaTotal(Number(queryObj.valor_hora), Number(queryObj.tempo_total_ligada)));
+		maquina.delete(body, function(status, json){
+			res.status(status).json(json);
+		});
 
-			res.status(200).json({ response: "success", data: receita });
-		} else {
-			res.status(400).json({ response: "error", data: "Passar valor/hora e tempo total ligada." });
-		}
-	} catch (exception) {
-		throw exception;
+	}else{
+		res.status(400).json({ ok: false, erro: '{_id}' });
 	}
-});
+})
 
 module.exports = router;

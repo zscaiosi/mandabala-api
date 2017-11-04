@@ -87,6 +87,26 @@ Operador.prototype.update = function(_id, json, next){
     db.close();
   });  
 
-} 
+}
+
+Operador.prototype.login = function(payload, next){
+
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+console.log("paylaod", payload);
+    db.collection("operadores").findOne(payload, (findErr, found) => {
+
+      if( findErr ){
+        next(500, {error: findErr});
+      }else if( found ){
+        next(200, {ok: true, result: found});
+      }else{
+        next(400, found);
+      }
+      db.close();
+    });
+
+  });
+
+}
 
 module.exports = Operador;

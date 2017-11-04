@@ -70,7 +70,7 @@ Maquina.prototype.findById = function(_id, next){
 }
 
 Maquina.prototype.insert = function(json, next){
-console.log("***", json);
+  console.log("Maquina insert", json);
   mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
     
     db.collection("maquinas").insert(json, null, (insertErr, inserted) => {
@@ -133,22 +133,45 @@ Maquina.prototype.calculateTime = function(json, next){
       db.close();
     });
 
+  });
+}
+
+Maquina.prototype.delete = function(json, next){
+  
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+
+    db.collection("maquinas").remove({ _id: json._id }, (removeErr, removed) => {
+
+      if(removeErr){
+        next(500, {ok: false});
+      }else if( removed ){
+        next(200, removed);
+      }
+      db.close();
+    });
+
+  });
+}
+
+Maquina.prototype.isOn = function(json, next){
+
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+    db.collection("maquinas").findOneAndUpdate({ _id: json._id },
+    {
+      $set: { ligada: true },
+      $push: { ultimas_vezes_ligada: json.onDate }
+    },
+    null,
+    (updateErr, updated) => {
+
+      if(updateErr){
+        console.log(updateErr);
+      }else{
+        next(updated);
+      }
+
+    });
   })
-
-  // mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
-    
-  //   db.collection("maquinas").findOneAndUpdate({ _id: json._id },
-  //     { $inc: { nr_maquinas: Number(1) } },
-  //     (updateErr, result) => {
-  //       if( updateErr ){
-  //         next(500);
-  //       }else{
-  //         next(200)
-  //       }
-  //       db.close();
-  //     });
-
-  // });  
 
 }
 

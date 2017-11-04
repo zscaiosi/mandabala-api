@@ -140,4 +140,21 @@ router.post('/login', (req, res) => {
 
 });
 
+router.delete('/remover/:_id', (req,res) => {
+	const body = req.params;
+	console.log("REMOVE", body);
+	
+	if( body.hasOwnProperty("_id") ){
+		const cliente = new User();
+
+		cliente.delete(body, function(status, json){
+			res.status(status).json(json);
+		});
+
+	}else{
+		res.status(400).json({ ok: false, erro: '{_id}' })
+	}
+
+});
+
 module.exports = router;

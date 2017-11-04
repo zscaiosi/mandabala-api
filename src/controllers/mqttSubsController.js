@@ -3,6 +3,7 @@ const mongodbClient = require('mongodb').MongoClient;
 const mongoUri = require("../config/hosts.json").mongoDb;
 //const fs = require('fs');
 const moment = require('moment');
+const Maquina = require('../models/Maquina');
 
 function MqttSubsController(url, topic) {
 	let client = mqtt.connect("mqtt://" + url);
@@ -17,7 +18,7 @@ function MqttSubsController(url, topic) {
 		//Certifica-se que existe uma mensage
 		let jsonMsg = msg.byteLength > 0 ? JSON.parse(msg.toString()) : null;
 		//Precisa ter vindo do tópico "maquina/bichinho/atividade/report" de atividades e ter chave _id na mensagem
-		if( t.indexOf("maquina/bichinho/atividade/") !== -1 && jsonMsg && jsonMsg.hasOwnProperty("_id") ){
+		if( t.indexOf("maquina/bichinho/atividades/") !== -1 && jsonMsg && jsonMsg.hasOwnProperty("_id") ){
 			try {
 				mongodbClient.connect( mongoUri, (dbErr, db) => {
 					//Callback do connect
@@ -27,7 +28,8 @@ function MqttSubsController(url, topic) {
 						db.collection('maquinas').findOneAndUpdate({ _id: String(jsonMsg._id) },
 							{
 								$inc: { tempo_total_ligada: Number(jsonMsg.tempo_ligada) },
-								$set: { ultima_acao:  moment.utc().format() }
+								$push: { periodos_ligada: Number(jsonMsg.tempo_ligada) },
+								$set: { ligada: false }
 							},
 							null,
 							(findErr, result) => {
@@ -50,9 +52,34 @@ function MqttSubsController(url, topic) {
 				throw error;
 			}			
 		}else if( t.indexOf("teste/maquinas/teste") !== -1 ){
+
 			console.log('TESTANDO MQTT: ', msg.toString());
-		}else{
-			console.log('Tópico desconhecido: ', t, msg.toString());
+
+		}else if( t.indexOf("maquina/bichinho/ligada/") > -1 ){
+			try{
+
+				if( jsonMsg.hasOwnProperty("isOn") ){
+
+					if( Number(jsonMsg.isOn) == 1 ){
+
+						const m = new Maquina();
+						m.isOn({ _id: jsonMsg._id, onDate: moment.utc().subtract(3, 'hours').format() }, function(result){
+							console.log("LIGOU no BD", result);
+						});
+
+					}else{
+						return;
+					}
+
+				}else{
+
+					console.log("{isOn?}")
+
+				}
+
+			}catch(exception){
+				console.log(exception);
+			}
 		}
 	});
 }

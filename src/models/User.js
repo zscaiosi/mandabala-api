@@ -87,6 +87,23 @@ User.prototype.update = function(_id, json, next){
     db.close();
   });  
 
-} 
+}
+
+User.prototype.delete = function(json, next){
+  
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+
+    db.collection("clientes").remove({ _id: json._id }, (removeErr, removed) => {
+
+      if(removeErr){
+        next(500, {ok: false});
+      }else if( removed ){
+        next(200, removed);
+      }
+      db.close();
+    });
+
+  })
+}
 
 module.exports = User;

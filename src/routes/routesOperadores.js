@@ -108,4 +108,17 @@ router.put('/atualizar', (req, res) => {
 	}
 });
 
+router.post('/login', (req, res) => {
+	const body = req.body;
+
+	if( body.hasOwnProperty("nome_quiosque") && body.hasOwnProperty("password") ){
+
+		const operador = new Operador();
+		operador.login(body, function(status, json){
+			res.status(status).json(json);
+		}); 
+
+	}
+});
+
 module.exports = router;
