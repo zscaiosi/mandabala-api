@@ -1,42 +1,109 @@
 const mongoDBClient = require('mongodb').MongoClient;
 const mongoUrl = require('../config/hosts.json');
 
-function User(){
-
+function User(userType){
+  this._userType = userType;
 }
 
-User.prototype.auth = function(username, password, next){
+User.prototype.auth = function(email, password, next){
 
   mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
     
-        db.collection("clientes").findOne({ username, password }, (findErr, result) => {
+    db.collection( this._userType === 1 ? "admins" : "clientes" ).findOne({ email, password }, (findErr, result) => {
+      console.log("FINDONE", result, findErr)
+      if( findErr ){
+        console.log(findErr);
+        next(500, findErr);
+      }else if( result ){
+        next(200, result);
+      }else{
+        next(500, null);
+      }
 
-          if( findErr ){console.log(findErr); next(findErr, null);}
-    
-          if( result ){
-            next(null, result);
-          }
-        }); 
-    
-      });
+    }); 
+    db.close();
+  });
 
 }
 
-User.prototype.findById = function(id, next){
+User.prototype.findById = function(_id, next){
+
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+
+    db.collection( this._userType === 1 ? "admins" : "clientes" ).findOne({ _id }, (findErr, result) => {
+
+      if( findErr ){
+        console.log(findErr);
+        next(500, findErr);
+      }else if( result ){
+        next(200, result);
+      }else{
+        next(500, null);
+      }
+
+    }); 
+    db.close();
+  });
+
+}
+
+User.prototype.insert = function(json, next){
 
   mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
     
-        db.collection("clientes").findOne({ _id: id }, (findErr, result) => {
+    db.collection( this._userType === 1 ? "admins" : "clientes" ).insert(json, null, (insertErr, inserted) => {
 
-          if( findErr ){console.log(findErr); next(findErr, null);}
-    
-          if( result ){
-            next(null, result);
-          }
-        }); 
-    
-      });
+      if( insertErr ){
+        console.log(insertErr);
+        next(500, insertErr);
+      }else if( inserted ){
+        next(200, inserted);
+      }else{
+        next(500, null);
+      }
 
+    });
+    db.close();
+  });
+
+}
+
+User.prototype.update = function(_id, json, next){
+
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+    
+    db.collection( this._userType === 1 ? "admins" : "clientes" ).findOneAndUpdate({ _id }, json, null, (updateError, updated) => {
+
+      if( updateError ){
+        console.log(updateError);
+        next(500, updateError);
+      }else if( updated ){
+        next(200, updated);
+      }else{
+        next(500, null);
+      }
+
+    });
+    db.close();
+  });  
+
+}
+
+User.prototype.delete = function(json, next){
+  
+  mongoDBClient.connect(mongoUrl.mongoDb, (dbErr, db) => {
+
+    db.collection("clientes").remove({ _id: json._id }, (removeErr, removed) => {
+
+      if(removeErr){
+        next(500, {ok: false});
+      }else if( removed ){
+        next(200, removed);
+      }
+      db.close();
+    });
+
+  })
 }
 
 module.exports = User;
